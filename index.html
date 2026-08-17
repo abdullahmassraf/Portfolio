@@ -1556,47 +1556,126 @@ function drawAmbientTexture(){
   // Everything is pre-rendered once; motion happens only through compositor transforms.
   // Light mode: engineering-sketch wallpaper — fine red pencil strokes over the white base.
   if(light){
+    // Light mode: refined CAD / engineering-sketch wallpaper.
+    // Draw once at startup/theme-change; animation is compositor-only via transform/scale.
     const rand = (seed)=>{
       const x=Math.sin(seed*12.9898)*43758.5453;
       return x-Math.floor(x);
     };
     ambientCtx.save();
+    ambientCtx.clearRect(0,0,w,h);
     ambientCtx.lineCap='round';
     ambientCtx.lineJoin='round';
-    for(let i=0;i<46;i++){
-      const y=(0.05 + (i/45)*0.90 + (rand(i+3)-0.5)*0.025)*h;
-      const bend=(rand(i+17)-0.5)*32;
-      const alpha=0.055 + rand(i+41)*0.055;
+
+    // Faint drafting grid.
+    ambientCtx.strokeStyle='rgba(204,0,0,.030)';
+    ambientCtx.lineWidth=0.75;
+    const grid=42;
+    for(let x=0;x<=w;x+=grid){
+      ambientCtx.beginPath(); ambientCtx.moveTo(x,0); ambientCtx.lineTo(x,h); ambientCtx.stroke();
+    }
+    for(let y=0;y<=h;y+=grid){
+      ambientCtx.beginPath(); ambientCtx.moveTo(0,y); ambientCtx.lineTo(w,y); ambientCtx.stroke();
+    }
+
+    // Very light secondary subdivision marks.
+    ambientCtx.strokeStyle='rgba(204,0,0,.016)';
+    ambientCtx.lineWidth=0.5;
+    for(let x=grid/2;x<w;x+=grid){
+      ambientCtx.beginPath(); ambientCtx.moveTo(x,0); ambientCtx.lineTo(x,h); ambientCtx.stroke();
+    }
+    for(let y=grid/2;y<h;y+=grid){
+      ambientCtx.beginPath(); ambientCtx.moveTo(0,y); ambientCtx.lineTo(w,y); ambientCtx.stroke();
+    }
+
+    // Large flowing red "pencil" construction ribbons.
+    for(let band=0;band<8;band++){
+      const baseY=(0.18 + band*0.095 + rand(30+band)*0.035)*h;
+      const amp=(0.055 + rand(50+band)*0.035)*h;
+      const drift=(rand(70+band)-0.5)*0.12*w;
+      for(let pass=0;pass<5;pass++){
+        const alpha=0.022 + 0.012*pass + rand(90+band*11+pass)*0.012;
+        ambientCtx.strokeStyle=`rgba(204,0,0,${alpha.toFixed(3)})`;
+        ambientCtx.lineWidth=0.65 + pass*0.18;
+        ambientCtx.beginPath();
+        ambientCtx.moveTo(-80,baseY + (pass-2)*2.2);
+        ambientCtx.bezierCurveTo(
+          w*0.18, baseY-amp*0.82 + drift*(band%2===0?1:-1),
+          w*0.38, baseY+amp*1.15,
+          w*0.56, baseY-amp*0.18
+        );
+        ambientCtx.bezierCurveTo(
+          w*0.76, baseY-amp*0.95,
+          w*0.88, baseY+amp*0.8,
+          w+80, baseY+amp*0.05+(pass-2)*2.2
+        );
+        ambientCtx.stroke();
+      }
+    }
+
+    // Secondary diagonal drafting sweeps for the CAD-flow look.
+    for(let i=0;i<16;i++){
+      const y0=(0.78 + rand(120+i)*0.22)*h;
+      const bow=(0.08 + rand(140+i)*0.10)*h;
+      ambientCtx.strokeStyle=`rgba(204,0,0,${(0.016+rand(160+i)*0.026).toFixed(3)})`;
+      ambientCtx.lineWidth=0.55+rand(180+i)*0.55;
+      ambientCtx.beginPath();
+      ambientCtx.moveTo(-50,y0);
+      ambientCtx.bezierCurveTo(w*.22,y0-bow,w*.48,y0+bow*.45,w*.70,y0-bow*.3);
+      ambientCtx.bezierCurveTo(w*.82,y0-bow*.62,w*.92,y0+bow*.12,w+50,y0-bow*.18);
+      ambientCtx.stroke();
+    }
+
+    // Construction circles / crosshair geometry.
+    for(let i=0;i<9;i++){
+      const cx=(0.10+rand(220+i)*0.82)*w;
+      const cy=(0.08+rand(240+i)*0.82)*h;
+      const r=24+rand(260+i)*110;
+      const alpha=0.032+rand(280+i)*0.028;
       ambientCtx.strokeStyle=`rgba(204,0,0,${alpha.toFixed(3)})`;
-      ambientCtx.lineWidth=0.8 + rand(i+53)*0.65;
+      ambientCtx.lineWidth=0.8;
       ambientCtx.beginPath();
-      ambientCtx.moveTo(-40,y);
-      ambientCtx.bezierCurveTo(w*.28,y+bend,w*.68,y-bend,w+40,y+(rand(i+71)-0.5)*18);
+      ambientCtx.arc(cx,cy,r,rand(300+i)*Math.PI*2,rand(320+i)*Math.PI*2 + Math.PI*(0.9+rand(340+i)*0.9));
       ambientCtx.stroke();
+      ambientCtx.beginPath(); ambientCtx.arc(cx,cy,r*0.22,0,Math.PI*2); ambientCtx.stroke();
+      ambientCtx.beginPath(); ambientCtx.moveTo(cx-r*.16,cy); ambientCtx.lineTo(cx+r*.16,cy); ambientCtx.stroke();
+      ambientCtx.beginPath(); ambientCtx.moveTo(cx,cy-r*.16); ambientCtx.lineTo(cx,cy+r*.16); ambientCtx.stroke();
     }
-    for(let i=0;i<18;i++){
-      const x=(0.04+(i/17)*0.92)*w;
-      const lean=(rand(i+91)-0.5)*42;
-      const alpha=0.035+rand(i+107)*0.05;
-      ambientCtx.strokeStyle=`rgba(153,0,0,${alpha.toFixed(3)})`;
-      ambientCtx.lineWidth=0.7+rand(i+127)*0.45;
-      ambientCtx.beginPath();
-      ambientCtx.moveTo(x,-30);
-      ambientCtx.bezierCurveTo(x+lean,h*.30,x-lean,h*.70,x+(rand(i+149)-0.5)*24,h+30);
-      ambientCtx.stroke();
+
+    // Fine dotted construction points.
+    for(let i=0;i<70;i++){
+      const x=rand(400+i)*w;
+      const y=rand(500+i)*h;
+      const r=0.6+rand(600+i)*1.4;
+      ambientCtx.fillStyle=`rgba(204,0,0,${(0.07+rand(700+i)*0.08).toFixed(3)})`;
+      ambientCtx.beginPath(); ambientCtx.arc(x,y,r,0,Math.PI*2); ambientCtx.fill();
     }
-    // A few loose construction curves / arcs for the hand-sketched engineering feel.
-    ambientCtx.strokeStyle='rgba(204,0,0,.075)';
-    ambientCtx.lineWidth=1.1;
-    for(let i=0;i<7;i++){
-      const cx=(0.12+rand(i+171)*0.78)*w;
-      const cy=(0.12+rand(i+191)*0.76)*h;
-      const r=45+rand(i+211)*115;
-      const start=rand(i+233)*Math.PI*2;
-      ambientCtx.beginPath();
-      ambientCtx.arc(cx,cy,r,start,start+Math.PI*(0.55+rand(i+251)*0.6));
-      ambientCtx.stroke();
+
+    // A few thin measurement / guide lines.
+    for(let i=0;i<10;i++){
+      const x=rand(800+i)*w;
+      const y=rand(900+i)*h;
+      const len=35+rand(1000+i)*70;
+      ambientCtx.strokeStyle=`rgba(204,0,0,${(0.018+rand(1100+i)*0.024).toFixed(3)})`;
+      ambientCtx.lineWidth=0.55;
+      ambientCtx.beginPath(); ambientCtx.moveTo(x,y); ambientCtx.lineTo(Math.min(w,x+len),y); ambientCtx.stroke();
+      ambientCtx.beginPath(); ambientCtx.moveTo(x,y-5); ambientCtx.lineTo(x,y+5); ambientCtx.stroke();
+      ambientCtx.beginPath(); ambientCtx.moveTo(Math.min(w,x+len),y-5); ambientCtx.lineTo(Math.min(w,x+len),y+5); ambientCtx.stroke();
     }
+
+    // Soft accent ribbon near the right side, matching the generated reference.
+    const ribbon=ambientCtx.createLinearGradient(w*.35,h*.25,w*.95,h*.8);
+    ribbon.addColorStop(0,'rgba(204,0,0,0)');
+    ribbon.addColorStop(.45,'rgba(204,0,0,.07)');
+    ribbon.addColorStop(.70,'rgba(204,0,0,.035)');
+    ribbon.addColorStop(1,'rgba(204,0,0,0)');
+    ambientCtx.strokeStyle=ribbon;
+    ambientCtx.lineWidth=18;
+    ambientCtx.beginPath();
+    ambientCtx.moveTo(w*.18,h*.75);
+    ambientCtx.bezierCurveTo(w*.44,h*.58,w*.64,h*.38,w*.98,h*.18);
+    ambientCtx.stroke();
+
     ambientCtx.restore();
     return;
   }
